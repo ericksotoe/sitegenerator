@@ -1,6 +1,11 @@
 import unittest
 
-from markdown_blocks import BlockType, block_to_block_type, markdown_to_blocks
+from markdown_blocks import (
+    BlockType,
+    block_to_block_type,
+    markdown_to_blocks,
+    markdown_to_html_node,
+)
 
 
 class TestMarkdownToHTML(unittest.TestCase):
@@ -141,6 +146,40 @@ This is the same paragraph on a new line
             ],
         )
 
+    def test_paragraphs(self):
+        md = """
+This is **bolded** paragraph
+text in a p
+tag here
+
+This is another paragraph with _italic_ text and `code` here
+
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is <b>bolded</b> paragraph text in a p tag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>",
+        )
+
+    def test_codeblock(self):
+        md = """
+```
+This is text that _should_ remain
+the **same** even with inline stuff
+```
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
+        )
+
+
+class TestBlockToBlockType(unittest.TestCase):
     def test_block_to_block_types(self):
         block = "# heading"
         self.assertEqual(block_to_block_type(block), BlockType.HEADING)
@@ -154,6 +193,96 @@ This is the same paragraph on a new line
         self.assertEqual(block_to_block_type(block), BlockType.OLIST)
         block = "paragraph"
         self.assertEqual(block_to_block_type(block), BlockType.PARAGRAPH)
+
+    def test_headings_all_levels(self):
+        # Test all heading levels (1-6)
+        for i in range(1, 7):
+            block = "#" * i + " heading"
+            self.assertEqual(block_to_block_type(block), BlockType.HEADING)
+
+    def test_code_block_variations(self):
+        # Test code block with various content
+        test_cases = [
+            ("```\nprint('hello')\n```", BlockType.CODE),
+            ("```python\ndef foo():\n    pass\n```", BlockType.CODE),
+            ("```\nline1\nline2\nline3\n```", BlockType.CODE),
+            # Should fail as code blocks (not single line)
+            ("```not a code block```", BlockType.PARAGRAPH),
+        ]
+
+        for block, expected in test_cases:
+            with self.subTest(block=block):
+                self.assertEqual(block_to_block_type(block), expected)
+
+    def test_list_valid_and_invalid(self):
+        # Test ordered and unordered lists
+        test_cases = [
+            # Unordered lists
+            ("- item1\n- item2\n- item3", BlockType.ULIST),
+            ("- only one item", BlockType.ULIST),
+            ("- item1\n- item2\nnot a list item", BlockType.PARAGRAPH),
+            # Ordered lists
+            ("1. first\n2. second\n3. third", BlockType.OLIST),
+            ("1. only item", BlockType.OLIST),
+            ("1. item1\n3. item3", BlockType.PARAGRAPH),  # Skipped number
+            ("2. wrong start", BlockType.PARAGRAPH),  # Doesn't start with 1
+            ("1. item1\n2. item2\nnot a list", BlockType.PARAGRAPH),
+            # Edge cases
+            ("-item without space", BlockType.PARAGRAPH),
+            ("1.item without space", BlockType.PARAGRAPH),
+            ("- ", BlockType.ULIST),  # Empty list item
+            ("1. ", BlockType.OLIST),  # Empty ordered item
+        ]
+
+        for block, expected in test_cases:
+            with self.subTest(block=block):
+                self.assertEqual(block_to_block_type(block), expected)
+
+    def test_paragraph_edge_cases(self):
+        # Test various paragraph cases
+        test_cases = [
+            # Simple paragraphs
+            ("just text", BlockType.PARAGRAPH),
+            ("multiple\nlines\nof text", BlockType.PARAGRAPH),
+            # Things that look like other blocks but aren't
+            ("#not a heading", BlockType.PARAGRAPH),  # No space after #
+            ("```code without closing", BlockType.PARAGRAPH),
+            (">quote\nnot continued", BlockType.PARAGRAPH),
+            # Empty or whitespace
+            ("", BlockType.PARAGRAPH),
+            ("   ", BlockType.PARAGRAPH),
+            ("\n\n", BlockType.PARAGRAPH),
+            # Mixed content
+            ("Some text\n- but then a list", BlockType.PARAGRAPH),
+            ("1. wrong\n- mixed", BlockType.PARAGRAPH),
+        ]
+
+        for block, expected in test_cases:
+            with self.subTest(block=block):
+                self.assertEqual(block_to_block_type(block), expected)
+
+    def test_nested_or_special_markdown(self):
+        # Test special Markdown cases
+        test_cases = [
+            # Indented code blocks (not fenced)
+            ("    code block", BlockType.PARAGRAPH),  # 4 spaces
+            # Horizontal rules
+            ("---", BlockType.PARAGRAPH),
+            ("***", BlockType.PARAGRAPH),
+            # Mixed content
+            (
+                "# Heading\n\nParagraph",
+                BlockType.HEADING,
+            ),  # Actually should be separate blocks
+            # Lists with sub-items
+            ("- item\n  - subitem", BlockType.PARAGRAPH),  # Indented sub-item
+            # Code block with empty lines
+            ("```\n\n\n```", BlockType.CODE),  # Empty code block
+        ]
+
+        for block, expected in test_cases:
+            with self.subTest(block=block):
+                self.assertEqual(block_to_block_type(block), expected)
 
 
 if __name__ == "__main__":
