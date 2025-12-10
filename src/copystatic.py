@@ -2,10 +2,12 @@ import os
 import shutil
 import sys
 
+from markdown_blocks import extract_title, markdown_to_html_node
+
 
 def copy_directory_contents(src_dir, dst_dir):
     # Logging start of operation
-    print(f"starting copy from '{src_dir} to {dst_dir}")
+    print(f"starting copy from '{src_dir}' to '{dst_dir}'")
 
     # Delete all contents of destination dir if it exists
     if os.path.exists(dst_dir) and os.path.isdir(dst_dir):
@@ -19,7 +21,7 @@ def copy_directory_contents(src_dir, dst_dir):
 
     # Create destination dir
     try:
-        os.mkdir(dst_dir)
+        os.makedirs(dst_dir, exist_ok=True)
         print(f"Created destination dir: {dst_dir}")
     except Exception as e:
         print(f"Error creating {dst_dir}: {e}")
@@ -51,3 +53,33 @@ def copy_directory_contents(src_dir, dst_dir):
 
     copy_recursive(src_dir, dst_dir)
     print(f"\nSuccessfully copied all contents from '{src_dir}' to '{dst_dir}'")
+
+
+def generate_page(from_path, template_path, dest_path):
+    print(
+        f"Generating page from: {from_path}\nto: {dest_path}\nusing the {template_path} template"
+    )
+    markdown_text = ""
+    template_file = ""
+    try:
+        with open(from_path, "r") as file:
+            markdown_text = file.read()
+        with open(template_path, "r") as file:
+            template_file = file.read()
+    except FileNotFoundError:
+        print(f"Error: the file {from_path} was not found")
+        sys.exit(1)
+
+    html_string = markdown_to_html_node(markdown_text).to_html()
+    page_title = extract_title(markdown_text)
+    filled = template_file.replace("{{ Title }}", page_title)
+    filled = filled.replace("{{ Content }}", html_string)
+
+    dir_path = os.path.dirname(dest_path)
+    if dir_path != "":
+        os.makedirs(dir_path, exist_ok=True)
+    try:
+        with open(dest_path, "w") as file:
+            file.write(filled)
+    except Exception as e:
+        print(f"Error writing to file path: {e}")

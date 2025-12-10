@@ -14,6 +14,15 @@ class BlockType(Enum):
     OLIST = "ordered_list"
 
 
+def extract_title(markdown):
+    lines = markdown.splitlines()
+    for line in lines:
+        line = line.strip()
+        if line.startswith("# "):
+            return line.lstrip("#").strip()
+    raise Exception("The markdown has no h1 header")
+
+
 def block_to_block_type(block):
     # split the block into lines so we can check per-line patterns
     lines = block.split("\n")

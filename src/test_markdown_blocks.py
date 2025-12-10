@@ -3,9 +3,38 @@ import unittest
 from markdown_blocks import (
     BlockType,
     block_to_block_type,
+    extract_title,
     markdown_to_blocks,
     markdown_to_html_node,
 )
+
+
+class TestExtractTitle(unittest.TestCase):
+    def test_extract_title(self):
+        test_cases = [
+            ("# Tolkien Fan Club", "Tolkien Fan Club"),
+            ("#    Hello.    ", "Hello."),
+            ("#   Hello#   ", "Hello#"),
+            ("\n\n# Hello", "Hello"),
+            ("Some text\n# Title here\nMore text", "Title here"),
+            ("# Tolkien Fan Club\n\nSome text...", "Tolkien Fan Club"),
+        ]
+
+        for actual, expected in test_cases:
+            with self.subTest(actual=actual):
+                self.assertEqual(extract_title(actual), expected)
+
+    def test_extract_title_raises(self):
+        bad_cases = [
+            "### Hello",
+            "## Subheading only",
+            "No headings at all",
+        ]
+
+        for actual in bad_cases:
+            with self.subTest(actual=actual):
+                with self.assertRaises(Exception):
+                    extract_title(actual)
 
 
 class TestMarkdownToHTML(unittest.TestCase):

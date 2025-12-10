@@ -26,7 +26,7 @@ class LeafNode(HTMLNode):
 
     def to_html(self):
         # all leaf nodes must have a value
-        if self.value is None or self.value == "":
+        if self.value is None or (self.value == "" and self.tag != "img"):
             raise ValueError("LeafNode must have a value")
 
         # if there is no tag return the value as raw text
