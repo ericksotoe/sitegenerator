@@ -1,9 +1,8 @@
-from textnode import TextNode, TextType
+from copystatic import copy_directory_contents
 
 
 def main():
-    tn = TextNode("This is some anchor text", TextType.LINK, "https://www.boot.dev")
-    print(tn)
+    copy_directory_contents("static", "public")
 
 
 if __name__ == "__main__":

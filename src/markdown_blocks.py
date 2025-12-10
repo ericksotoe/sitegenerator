@@ -89,9 +89,13 @@ def markdown_to_html_node(markdown):
     blocks = markdown_to_blocks(markdown)
     for block in blocks:
         block_type = block_to_block_type(block)
+
         if block_type == BlockType.HEADING:
             heading_number = count_heading(block)
-            head_node = ParentNode(f"h{heading_number}", block.lstrip("#").strip())
+            heading_text = block.lstrip("#").strip()
+            head_node = ParentNode(
+                f"h{heading_number}", children=text_to_children(heading_text)
+            )
             div_node.children.append(head_node)  # type: ignore
 
         elif block_type == BlockType.PARAGRAPH:
@@ -114,7 +118,7 @@ def markdown_to_html_node(markdown):
             clean_lines = []
             for line in lines:
                 clean_lines.append(line.lstrip(">").lstrip())
-            clean_text = "\n".join(clean_lines)
+            clean_text = " ".join(clean_lines)
 
             bquote_node = ParentNode(
                 "blockquote", children=text_to_children(clean_text)
