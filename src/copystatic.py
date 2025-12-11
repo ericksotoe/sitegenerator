@@ -1,4 +1,5 @@
 import os
+import pathlib
 import shutil
 import sys
 
@@ -83,3 +84,19 @@ def generate_page(from_path, template_path, dest_path):
             file.write(filled)
     except Exception as e:
         print(f"Error writing to file path: {e}")
+
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    print(
+        f"Generating page from: {dir_path_content}\nto: {dest_dir_path}\n using {template_path} template"
+    )
+    source_dirs = os.listdir(dir_path_content)
+    for dir in source_dirs:
+        source_path = os.path.join(dir_path_content, dir)
+        if os.path.isfile(source_path):
+            dest_path_obj = pathlib.Path(os.path.join(dest_dir_path, dir))
+            dest_new_file_path = dest_path_obj.with_suffix(".html")
+            generate_page(source_path, template_path, dest_new_file_path)
+        else:
+            dest_subdir = os.path.join(dest_dir_path, dir)
+            generate_pages_recursive(source_path, template_path, dest_subdir)
