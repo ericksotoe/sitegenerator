@@ -56,7 +56,7 @@ def copy_directory_contents(src_dir, dst_dir):
     print(f"\nSuccessfully copied all contents from '{src_dir}' to '{dst_dir}'")
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(
         f"Generating page from: {from_path}\nto: {dest_path}\nusing the {template_path} template"
     )
@@ -75,6 +75,8 @@ def generate_page(from_path, template_path, dest_path):
     page_title = extract_title(markdown_text)
     filled = template_file.replace("{{ Title }}", page_title)
     filled = filled.replace("{{ Content }}", html_string)
+    filled = filled.replace('href="/', f'href="{basepath}')
+    filled = filled.replace('src="/', f'src="{basepath}')
 
     dir_path = os.path.dirname(dest_path)
     if dir_path != "":
@@ -86,7 +88,7 @@ def generate_page(from_path, template_path, dest_path):
         print(f"Error writing to file path: {e}")
 
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     print(
         f"Generating page from: {dir_path_content}\nto: {dest_dir_path}\n using {template_path} template"
     )
@@ -96,7 +98,7 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
         if os.path.isfile(source_path):
             dest_path_obj = pathlib.Path(os.path.join(dest_dir_path, dir))
             dest_new_file_path = dest_path_obj.with_suffix(".html")
-            generate_page(source_path, template_path, dest_new_file_path)
+            generate_page(source_path, template_path, dest_new_file_path, basepath)
         else:
             dest_subdir = os.path.join(dest_dir_path, dir)
-            generate_pages_recursive(source_path, template_path, dest_subdir)
+            generate_pages_recursive(source_path, template_path, dest_subdir, basepath)
